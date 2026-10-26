@@ -1,4 +1,4 @@
-"""Controladores deslizantes para Twinstar (RGBW + Brillo)."""
+"""Slider controls for Twinstar (RGBW + brightness)."""
 from __future__ import annotations
 
 import logging
@@ -25,20 +25,20 @@ _LOGGER = logging.getLogger(__name__)
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
-    """Configura las entidades number desde una entrada de configuración."""
+    """Set up the number entities from a config entry."""
     runtime_data = entry.runtime_data
     mac_address = runtime_data.mac_address
     ble_client = runtime_data.ble_client
 
-    barras = [
+    sliders = [
         TwinstarColorNumber(mac_address, name, prefix, icon, ble_client)
         for prefix, name, icon in ALL_CHANNELS
     ]
-    barras.extend(
+    sliders.extend(
         [
             TwinstarScheduleNumber(
                 mac_address,
-                "Amanecer (Minutos)",
+                "Sunrise (Minutes)",
                 "sunrise_min",
                 "mdi:sunrise",
                 DEFAULT_SUNRISE_MIN,
@@ -46,7 +46,7 @@ async def async_setup_entry(
             ),
             TwinstarScheduleNumber(
                 mac_address,
-                "Atardecer (Minutos)",
+                "Sunset (Minutes)",
                 "sunset_min",
                 "mdi:sunset",
                 DEFAULT_SUNSET_MIN,
@@ -54,11 +54,11 @@ async def async_setup_entry(
             ),
         ]
     )
-    async_add_entities(barras)
+    async_add_entities(sliders)
 
 
 class TwinstarColorNumber(NumberEntity, RestoreEntity):
-    """Representación de una barra deslizante para un canal de la Twinstar."""
+    """A slider for one Twinstar channel."""
 
     def __init__(
         self,
@@ -81,11 +81,11 @@ class TwinstarColorNumber(NumberEntity, RestoreEntity):
 
     @property
     def device_info(self) -> DeviceInfo:
-        """Retorna información del dispositivo (compartida con light.py)."""
+        """Return device info (shared with light.py)."""
         return get_device_info(self._mac)
 
     async def async_added_to_hass(self) -> None:
-        """Restaura el último estado conocido justo antes de arrancar."""
+        """Restore the last known state right before startup."""
         await super().async_added_to_hass()
 
         last_state = await self.async_get_last_state()
@@ -93,7 +93,7 @@ class TwinstarColorNumber(NumberEntity, RestoreEntity):
             try:
                 self._value = int(float(last_state.state))
                 _LOGGER.debug(
-                    "Memoria restaurada: %s vuelve al %s%%",
+                    "State restored: %s returns to %s%%",
                     self._attr_name,
                     self._value,
                 )
@@ -102,26 +102,26 @@ class TwinstarColorNumber(NumberEntity, RestoreEntity):
 
     @property
     def native_value(self) -> int:
-        """Retorna el valor actual del slider."""
+        """Return the slider's current value."""
         return self._value
 
     async def async_set_native_value(self, value: float) -> None:
-        """Envía el nuevo valor al dispositivo por BLE."""
-        nuevo_valor = int(value)
-        comando = f"{self._prefix}{nuevo_valor}"
+        """Send the new value to the device over BLE."""
+        new_value = int(value)
+        command = f"{self._prefix}{new_value}"
 
-        success = await self._ble_client.send_command(comando)
+        success = await self._ble_client.send_command(command)
         if success:
-            self._value = nuevo_valor
+            self._value = new_value
             self.async_write_ha_state()
-            _LOGGER.debug("Enviado %s con éxito", comando)
+            _LOGGER.debug("Sent %s successfully", command)
         else:
-            # Si falla, forzamos a la UI a volver al valor anterior
+            # On failure, force the UI back to the previous value
             self.async_write_ha_state()
 
 
 class TwinstarScheduleNumber(NumberEntity, RestoreEntity):
-    """Control deslizante para las duraciones de rampa (amanecer/atardecer) del temporizador BLE."""
+    """Slider for the BLE timer's ramp durations (sunrise/sunset)."""
 
     def __init__(
         self,
@@ -145,18 +145,18 @@ class TwinstarScheduleNumber(NumberEntity, RestoreEntity):
 
     @property
     def device_info(self) -> DeviceInfo:
-        """Retorna información del dispositivo."""
+        """Return device info."""
         return get_device_info(self._mac)
 
     async def async_added_to_hass(self) -> None:
-        """Restaura la última duración conocida."""
+        """Restore the last known duration."""
         await super().async_added_to_hass()
         last_state = await self.async_get_last_state()
         if last_state and last_state.state not in ("unknown", "unavailable"):
             try:
                 self._value = int(float(last_state.state))
                 _LOGGER.debug(
-                    "Memoria restaurada: %s vuelve a %s min",
+                    "State restored: %s returns to %s min",
                     self._attr_name,
                     self._value,
                 )
@@ -165,14 +165,14 @@ class TwinstarScheduleNumber(NumberEntity, RestoreEntity):
 
     @property
     def native_value(self) -> int:
-        """Retorna el valor actual."""
+        """Return the current value."""
         return self._value
 
     async def async_set_native_value(self, value: float) -> None:
-        """Actualiza la duración e inyecta la nueva programación por BLE."""
+        """Update the duration and push the new schedule over BLE."""
         self._value = int(value)
         self.async_write_ha_state()
 
-        _LOGGER.debug("Nueva duración en %s: %s min", self._attr_name, self._value)
+        _LOGGER.debug("New duration for %s: %s min", self._attr_name, self._value)
         await async_send_schedule_command(self.hass, self._mac, self._ble_client)
 

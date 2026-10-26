@@ -2,23 +2,23 @@
   "config": {
     "step": {
       "user": {
-        "title": "Añadir Acuario Twinstar",
-        "description": "Introduce la dirección MAC de tu lámpara Twinstar.",
+        "title": "Add Twinstar Aquarium",
+        "description": "Enter the MAC address of your Twinstar lamp.",
         "data": {
-          "mac_address": "Dirección MAC (Ej: 50:78:7D:XX:XX:XX)"
+          "mac_address": "MAC Address (e.g. 50:78:7D:XX:XX:XX)"
         }
       },
       "bluetooth_confirm": {
-        "title": "¡Twinstar encontrada!",
-        "description": "Se ha detectado la lámpara **{name}** con MAC `{mac}`. ¿Quieres configurarla?"
+        "title": "Twinstar found!",
+        "description": "Detected lamp **{name}** with MAC `{mac}`. Do you want to set it up?"
       }
     },
     "error": {
-      "invalid_mac": "La dirección MAC no es válida. Usa el formato XX:XX:XX:XX:XX:XX."
+      "invalid_mac": "Invalid MAC address. Use the format XX:XX:XX:XX:XX:XX."
     },
     "abort": {
-      "already_configured": "Este dispositivo ya está configurado.",
-      "not_twinstar_pro": "El dispositivo detectado no es una Twinstar Light Pro."
+      "already_configured": "This device is already configured.",
+      "not_twinstar_pro": "The detected device is not a Twinstar Light Pro."
     }
   }
 }
