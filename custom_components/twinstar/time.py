@@ -51,7 +51,7 @@ class TwinstarTimeBase(TimeEntity, RestoreEntity):
     def __init__(
         self,
         mac_address: str,
-        name: str,
+        translation_key: str,
         unique_suffix: str,
         icon: str,
         default_time: str,
@@ -59,7 +59,8 @@ class TwinstarTimeBase(TimeEntity, RestoreEntity):
     ) -> None:
         self._mac = mac_address
         self._ble_client = ble_client
-        self._attr_name = f"Twinstar {name}"
+        self._attr_has_entity_name = True
+        self._attr_translation_key = translation_key
         self._attr_unique_id = f"twinstar_{mac_address}_{unique_suffix}"
         self._attr_icon = icon
         self._default_time_obj = _parse_time_str(default_time, time(9, 0))
@@ -78,7 +79,7 @@ class TwinstarTimeBase(TimeEntity, RestoreEntity):
             self._value = _parse_time_str(last_state.state, self._default_time_obj)
             _LOGGER.debug(
                 "State restored: %s returns to %s",
-                self._attr_name,
+                self.entity_id,
                 self._value,
             )
 
@@ -92,7 +93,7 @@ class TwinstarTimeBase(TimeEntity, RestoreEntity):
         self._value = value
         self.async_write_ha_state()
 
-        _LOGGER.debug("New time for %s: %s", self._attr_name, value)
+        _LOGGER.debug("New time for %s: %s", self.entity_id, value)
         await async_send_schedule_command(self.hass, self._mac, self._ble_client)
 
 
@@ -102,7 +103,7 @@ class TwinstarStartTime(TwinstarTimeBase):
     def __init__(self, mac_address: str, ble_client: TwinstarBLEClient) -> None:
         super().__init__(
             mac_address=mac_address,
-            name="On Time",
+            translation_key="start_time",
             unique_suffix="start_time",
             icon="mdi:weather-sunset-up",
             default_time=DEFAULT_START_TIME,
@@ -116,7 +117,7 @@ class TwinstarEndTime(TwinstarTimeBase):
     def __init__(self, mac_address: str, ble_client: TwinstarBLEClient) -> None:
         super().__init__(
             mac_address=mac_address,
-            name="Off Time",
+            translation_key="end_time",
             unique_suffix="end_time",
             icon="mdi:weather-sunset-down",
             default_time=DEFAULT_END_TIME,

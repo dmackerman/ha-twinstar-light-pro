@@ -51,7 +51,9 @@ class TwinstarLight(LightEntity, RestoreEntity):
         self._entry = entry
         self._mac = mac_address
         self._ble_client = ble_client
-        self._attr_name = "Twinstar Aquarium"
+        self._attr_has_entity_name = True
+        # None = use the (translated) device name as the light's name
+        self._attr_name = None
         self._attr_unique_id = f"twinstar_light_{mac_address}"
         self._attr_supported_color_modes = {ColorMode.ONOFF}
         self._attr_color_mode = ColorMode.ONOFF

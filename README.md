@@ -44,13 +44,25 @@ It may also work with other **Twinstar Light Pro** models, but they have not bee
 - **Multi-device support:** Independent control of multiple aquariums.
 - **Individual channel control:** `number` entities to adjust Red, Green, Blue, White and Overall Brightness (0–100%).
 - **Hardware timer:** Sunrise, sunset and schedule configured directly in the controller's memory (`TOn:HHMM_HHMM_MM_MM`).
-- **Clock sync:** Automatic adjustment of the controller's RTC (`YYYYMMDDHHMMSS`) and a manual `button.twinstar_sync_clock` button.
+- **Clock sync:** Automatic adjustment of the controller's RTC (`YYYYMMDDHHMMSS`) and a manual **Sync clock** button.
 - **State persistence:** All values are restored automatically after Home Assistant restarts.
 - **Advanced services:**
   - `set_schedule`
   - `send_command`
   - `send_sequence`
 - **Robust connection:** Uses `bleak-retry-connector` to minimize disconnects and improve Bluetooth stability.
+
+---
+
+# 🌐 Languages
+
+The integration uses Home Assistant's built-in translation system. It currently ships in **English** and **Spanish**.
+
+- **Device and entity names** follow the Home Assistant system language (**Settings → System → General → Language**). Entity IDs are generated from the name in that language when the device is first added, and do not change afterwards.
+- **Setup dialogs, options and service (action) descriptions** follow each user's own language (**Profile → Language**).
+- Log messages are in English, following Home Assistant convention.
+
+To add a language, copy `custom_components/twinstar/translations/en.json` to `<language code>.json` (for example `de.json`) and translate the values. Keep the keys unchanged.
 
 ---
 

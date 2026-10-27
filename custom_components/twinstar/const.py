@@ -34,13 +34,14 @@ DEFAULT_SUNRISE_MIN = 30
 DEFAULT_SUNSET_MIN = 30
 
 
-# All channels for the number sliders (including overall brightness A)
+# All channels for the number sliders (including overall brightness A):
+# (command prefix, translation key, icon)
 ALL_CHANNELS: list[tuple[str, str, str]] = [
-    (CHANNEL_BRIGHTNESS, "Overall Brightness", "mdi:brightness-7"),
-    (CHANNEL_RED, "Red", "mdi:palette"),
-    (CHANNEL_GREEN, "Green", "mdi:palette"),
-    (CHANNEL_BLUE, "Blue", "mdi:palette"),
-    (CHANNEL_WHITE, "Plant Growth (White)", "mdi:white-balance-sunny"),
+    (CHANNEL_BRIGHTNESS, "brightness", "mdi:brightness-7"),
+    (CHANNEL_RED, "red", "mdi:palette"),
+    (CHANNEL_GREEN, "green", "mdi:palette"),
+    (CHANNEL_BLUE, "blue", "mdi:palette"),
+    (CHANNEL_WHITE, "white", "mdi:white-balance-sunny"),
 ]
 
 
@@ -49,7 +50,8 @@ def get_device_info(mac: str) -> DeviceInfo:
     mac_short = mac[-5:] if mac else "Unknown"
     return DeviceInfo(
         identifiers={(DOMAIN, mac)},
-        name=f"Twinstar Aquarium ({mac_short})",
+        translation_key="aquarium",
+        translation_placeholders={"mac": mac_short},
         manufacturer="Twinstar",
         model="Bluetooth LED Controller",
         sw_version="1.0.0",

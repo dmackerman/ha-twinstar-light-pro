@@ -37,7 +37,8 @@ class TwinstarSyncClockButton(ButtonEntity):
     ) -> None:
         self._mac = mac_address
         self._ble_client = ble_client
-        self._attr_name = "Twinstar Sync Clock"
+        self._attr_has_entity_name = True
+        self._attr_translation_key = "sync_clock"
         self._attr_unique_id = f"twinstar_{mac_address}_sync_clock"
         self._attr_icon = "mdi:clock-sync"
 

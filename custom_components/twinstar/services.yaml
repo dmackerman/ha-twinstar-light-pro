@@ -1,43 +1,29 @@
 send_command:
-  name: "Send Bluetooth Command"
-  description: "Send a command directly to the Twinstar lamp."
   fields:
     entity_id:
-      name: "Twinstar Lamp"
-      description: "Select the light to send the command to."
       required: false
       selector:
         entity:
           domain: light
           integration: twinstar
     command:
-      name: "Command"
-      description: "Example: A50, R100, W20"
       required: true
       selector:
         text:
 
 send_sequence:
-  name: "Send Command Sequence"
-  description: "Send a list of commands with a pause between each."
   fields:
     entity_id:
-      name: "Twinstar Lamp"
-      description: "Select the target light."
       required: false
       selector:
         entity:
           domain: light
           integration: twinstar
     commands:
-      name: "Commands"
-      description: "List of commands to send (e.g. ['R100', 'G0', 'B0'])."
       required: true
       selector:
         object:
     delay:
-      name: "Delay (Seconds)"
-      description: "Wait time between commands (default: 1)."
       default: 1
       required: false
       selector:
@@ -47,32 +33,22 @@ send_sequence:
           step: 0.1
 
 set_schedule:
-  name: "Program Schedule on the Controller"
-  description: "Program the on/off times and ramp durations (sunrise/sunset) natively into the Twinstar lamp's hardware."
   fields:
     entity_id:
-      name: "Twinstar Lamp"
-      description: "Select the target light."
       required: false
       selector:
         entity:
           domain: light
           integration: twinstar
     start_time:
-      name: "On Time"
-      description: "Time in HH:MM format (example: '09:00')."
       required: true
       selector:
         time:
     end_time:
-      name: "Off Time"
-      description: "Time in HH:MM format (example: '21:00')."
       required: true
       selector:
         time:
     sunrise_minutes:
-      name: "Sunrise Minutes"
-      description: "Ramp-up duration when turning on, in minutes (0-60)."
       default: 30
       required: false
       selector:
@@ -81,8 +57,6 @@ set_schedule:
           max: 60
           step: 1
     sunset_minutes:
-      name: "Sunset Minutes"
-      description: "Ramp-down duration when turning off, in minutes (0-60)."
       default: 30
       required: false
       selector:

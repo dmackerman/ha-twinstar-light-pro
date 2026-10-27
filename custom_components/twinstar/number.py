@@ -31,14 +31,14 @@ async def async_setup_entry(
     ble_client = runtime_data.ble_client
 
     sliders = [
-        TwinstarColorNumber(mac_address, name, prefix, icon, ble_client)
-        for prefix, name, icon in ALL_CHANNELS
+        TwinstarColorNumber(mac_address, translation_key, prefix, icon, ble_client)
+        for prefix, translation_key, icon in ALL_CHANNELS
     ]
     sliders.extend(
         [
             TwinstarScheduleNumber(
                 mac_address,
-                "Sunrise (Minutes)",
+                "sunrise_minutes",
                 "sunrise_min",
                 "mdi:sunrise",
                 DEFAULT_SUNRISE_MIN,
@@ -46,7 +46,7 @@ async def async_setup_entry(
             ),
             TwinstarScheduleNumber(
                 mac_address,
-                "Sunset (Minutes)",
+                "sunset_minutes",
                 "sunset_min",
                 "mdi:sunset",
                 DEFAULT_SUNSET_MIN,
@@ -63,7 +63,7 @@ class TwinstarColorNumber(NumberEntity, RestoreEntity):
     def __init__(
         self,
         mac_address: str,
-        name: str,
+        translation_key: str,
         prefix: str,
         icon: str,
         ble_client: TwinstarBLEClient,
@@ -71,7 +71,8 @@ class TwinstarColorNumber(NumberEntity, RestoreEntity):
         self._mac = mac_address
         self._prefix = prefix
         self._ble_client = ble_client
-        self._attr_name = f"Twinstar {name}"
+        self._attr_has_entity_name = True
+        self._attr_translation_key = translation_key
         self._attr_unique_id = f"twinstar_{mac_address}_{prefix}"
         self._attr_icon = icon
         self._attr_native_min_value = 0
@@ -94,7 +95,7 @@ class TwinstarColorNumber(NumberEntity, RestoreEntity):
                 self._value = int(float(last_state.state))
                 _LOGGER.debug(
                     "State restored: %s returns to %s%%",
-                    self._attr_name,
+                    self.entity_id,
                     self._value,
                 )
             except ValueError:
@@ -126,7 +127,7 @@ class TwinstarScheduleNumber(NumberEntity, RestoreEntity):
     def __init__(
         self,
         mac_address: str,
-        name: str,
+        translation_key: str,
         unique_suffix: str,
         icon: str,
         default_val: int,
@@ -134,7 +135,8 @@ class TwinstarScheduleNumber(NumberEntity, RestoreEntity):
     ) -> None:
         self._mac = mac_address
         self._ble_client = ble_client
-        self._attr_name = f"Twinstar {name}"
+        self._attr_has_entity_name = True
+        self._attr_translation_key = translation_key
         self._attr_unique_id = f"twinstar_{mac_address}_{unique_suffix}"
         self._attr_icon = icon
         self._attr_native_min_value = 0
@@ -157,7 +159,7 @@ class TwinstarScheduleNumber(NumberEntity, RestoreEntity):
                 self._value = int(float(last_state.state))
                 _LOGGER.debug(
                     "State restored: %s returns to %s min",
-                    self._attr_name,
+                    self.entity_id,
                     self._value,
                 )
             except ValueError:
@@ -173,6 +175,6 @@ class TwinstarScheduleNumber(NumberEntity, RestoreEntity):
         self._value = int(value)
         self.async_write_ha_state()
 
-        _LOGGER.debug("New duration for %s: %s min", self._attr_name, self._value)
+        _LOGGER.debug("New duration for %s: %s min", self.entity_id, self._value)
         await async_send_schedule_command(self.hass, self._mac, self._ble_client)
 
