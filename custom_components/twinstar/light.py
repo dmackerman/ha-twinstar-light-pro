@@ -133,7 +133,10 @@ class TwinstarLight(LightEntity, RestoreEntity):
 
     async def async_turn_off(self, **kwargs) -> None:
         """Turn the light off safely."""
-        success = await self._ble_client.send_commands([b"A0", CMD_OFF])
+        # Only send OFF. Zeroing the brightness first (A0) wipes the level stored on
+        # the controller, so the next scheduled turn-on comes up dim while HA still
+        # shows the old value.
+        success = await self._ble_client.send_commands([CMD_OFF])
         if success:
             self._is_on = False
             self.async_write_ha_state()
