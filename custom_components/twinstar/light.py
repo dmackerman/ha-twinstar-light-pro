@@ -1,7 +1,10 @@
 """Smart light switch for Twinstar."""
 from __future__ import annotations
 
+import asyncio
 import logging
+from datetime import datetime
+from typing import Any
 
 from homeassistant.components.light import ColorMode, LightEntity
 from homeassistant.config_entries import ConfigEntry
@@ -11,6 +14,7 @@ from homeassistant.helpers import device_registry as dr, entity_registry as er
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.restore_state import RestoreEntity
+from homeassistant.util import dt as dt_util
 
 from .ble_client import TwinstarBLEClient
 from .const import (
@@ -22,6 +26,10 @@ from .const import (
 )
 
 _LOGGER = logging.getLogger(__name__)
+
+# Seconds to wait after a command before re-reading the power state, so the
+# controller has applied it (and a burst of commands collapses into one read)
+REFRESH_DELAY = 2
 
 
 async def async_setup_entry(
@@ -42,6 +50,9 @@ async def async_setup_entry(
 class TwinstarLight(LightEntity, RestoreEntity):
     """Represents a Twinstar aquarium lamp."""
 
+    # Changes on every poll; keep it out of the recorder
+    _unrecorded_attributes = frozenset({"last_power_check"})
+
     def __init__(
         self,
         entry: ConfigEntry,
@@ -59,6 +70,9 @@ class TwinstarLight(LightEntity, RestoreEntity):
         self._attr_color_mode = ColorMode.ONOFF
         self._attr_icon = "mdi:lightbulb-fluorescent-tube"
         self._is_on = False
+        self._last_power_check: datetime | None = None
+        self._power_check_error: str | None = None
+        self._refresh_pending = False
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -80,6 +94,11 @@ class TwinstarLight(LightEntity, RestoreEntity):
         runtime_data = getattr(self._entry, "runtime_data", None)
         if runtime_data is not None:
             runtime_data.entities[self._mac] = self
+
+        # Re-read the real state after any command sent to the lamp
+        self.async_on_remove(
+            self._ble_client.add_sent_listener(self._schedule_power_refresh)
+        )
 
         # Schedule an initial read of the real physical state after startup
         self.hass.async_create_background_task(
@@ -106,18 +125,72 @@ class TwinstarLight(LightEntity, RestoreEntity):
         self._is_on = state
         self.async_write_ha_state()
 
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Expose when the state was last read from the lamp, and any read error."""
+        return {
+            "last_power_check": (
+                self._last_power_check.isoformat() if self._last_power_check else None
+            ),
+            "power_check_error": self._power_check_error,
+        }
+
+    def _schedule_power_refresh(self) -> None:
+        """Re-read the power state shortly after a command (debounced)."""
+        if self._refresh_pending or self.hass is None:
+            return
+        self._refresh_pending = True
+
+        async def _refresh() -> None:
+            try:
+                await asyncio.sleep(REFRESH_DELAY)
+            finally:
+                self._refresh_pending = False
+            await self.async_update_power_status()
+
+        # Not eager: the caller (e.g. async_turn_off) writes its optimistic state
+        # right after the send returns, and the read must land after that write
+        self.hass.async_create_background_task(
+            _refresh(),
+            name=f"twinstar_status_refresh_{self._mac}",
+            eager_start=False,
+        )
+
     async def async_update_power_status(self) -> None:
         """Query over Bluetooth whether the lamp is actually, physically on or off."""
         status = await self._ble_client.async_read_power_status()
-        if status is not None and status != self._is_on:
+
+        if status is None:
+            error = self._ble_client.last_error or "no reply"
+            if self._power_check_error is None:
+                _LOGGER.warning(
+                    "Twinstar (%s): Could not read the power state (%s); "
+                    "HA keeps showing %s until a read succeeds",
+                    self._mac,
+                    error,
+                    "ON" if self._is_on else "OFF",
+                )
+            if error != self._power_check_error:
+                self._power_check_error = error
+                self.async_write_ha_state()
+            return
+
+        if self._power_check_error is not None:
+            _LOGGER.info(
+                "Twinstar (%s): Power state readable again", self._mac
+            )
+        if status != self._is_on:
             _LOGGER.info(
                 "Twinstar (%s): Physical state updated to %s (previous in HA: %s)",
                 self._mac,
                 "ON" if status else "OFF",
                 "ON" if self._is_on else "OFF",
             )
-            self._is_on = status
-            self.async_write_ha_state()
+        self._is_on = status
+        self._power_check_error = None
+        self._last_power_check = dt_util.utcnow()
+        # Write on every good read, so last_reported shows the state is fresh
+        self.async_write_ha_state()
 
     # --- Commands ---
 
